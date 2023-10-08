@@ -7,14 +7,20 @@
 0110 or rd ra rb (xor)
 0111 xor rd ra rb (nand)
 
-1000 lwd rd ra os (load word)
-1001 swd rs ra os (store word)
-1010 adi rd imm (add immediate)
-1011 lui rd imm (load upper immediate)
-1100 jeq imm (jump if equal)
-1101 jlt imm (jump if less than)
-1110 mul rd ra rb (multiply upper bits into rd, lower bits into ra, store lower if rd = ra)
-1111 fpt code ra rb (floating point)
+1000 lw rd ra os (load word)
+1001 sw rs ra os (store word)
+1010 addi rd imm imm (add immediate)
+1011 lui rd imm imm (load upper immediate)
+1100 math op ra rb (math operation on ra and rb, store in i0 and i1 intermediate registers)
+1101 int code (interrupt)
+1110 jmp imm imm 0 cond (jump conditional, bits = lt, eq, gt)
+1110 sint rd 0000 1 int (store intermediate)
+1111 fpt op ra rb (floating point)
+
+math:
+0000: mul (multiply upper bits into i0, lower bits into i1)
+0001: div (divide remainder into i0, quotient into i1)
+
+int:
 
 fpt:
-1111 int code (interrupt, not floating point)
