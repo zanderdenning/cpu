@@ -1,0 +1,20 @@
+0000 add rd ra rb (add)
+0001 sub rd ra rb (subtract)
+0010 sll rd ra rb (shift left logical)
+0011 srl rd ra rb (shift right logical)
+0100 and rd ra rb (and)
+0101 nand rd ra rb (or)
+0110 or rd ra rb (xor)
+0111 xor rd ra rb (nand)
+
+1000 lwd rd ra os (load word)
+1001 swd rs ra os (store word)
+1010 adi rd imm (add immediate)
+1011 lui rd imm (load upper immediate)
+1100 jeq imm (jump if equal)
+1101 jlt imm (jump if less than)
+1110 mul rd ra rb (multiply upper bits into rd, lower bits into ra, store lower if rd = ra)
+1111 fpt code ra rb (floating point)
+
+fpt:
+1111 int code (interrupt, not floating point)
