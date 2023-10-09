@@ -1,3 +1,4 @@
+opcodes:
 0000 add rd ra rb (add)
 0001 sub rd ra rb (subtract)
 0010 sll rd ra rb (shift left logical)
@@ -7,20 +8,71 @@
 0110 or rd ra rb (xor)
 0111 xor rd ra rb (nand)
 
-1000 lw rd ra os (load word)
-1001 sw rs ra os (store word)
+1000 lw rd ra imm (load word)
+1001 sw rs ra imm (store word)
 1010 addi rd imm imm (add immediate)
 1011 lui rd imm imm (load upper immediate)
 1100 math op ra rb (math operation on ra and rb, store in i0 and i1 intermediate registers)
-1101 int code (interrupt)
+1101 int device 0000 code (interrupt)
 1110 jmp imm imm 0 cond (jump conditional, bits = lt, eq, gt)
 1110 sint rd 0000 1 int (store intermediate)
 1111 fpt op ra rb (floating point)
 
 math:
-0000: mul (multiply upper bits into i0, lower bits into i1)
-0001: div (divide remainder into i0, quotient into i1)
-
-int:
+0000: mul (multiply lower bits into i0, upper bits into i1)
+0001: div (divide quotient into i0, remainder into i1)
 
 fpt:
+
+registers:
+0000 zero
+0001 pc
+0010 data
+0011 code
+0100 sp
+0101 hp
+0110 ret
+0111 r0
+1000 r1
+1001 r2
+1010 r3
+1011 r4
+1100 r5
+1101 r6
+1110 r7
+1111 r8
+
+intermediate registers:
+000 m0
+001 m1
+010 f0
+
+memory map:
+0XXX XXXX XXXX XXXX memory
+1DDD DXXX XXXX XXXX device
+
+devices:
+0000 power
+0001
+0010
+0011
+0100
+0101
+0110
+0111
+1000
+1001
+1010
+1011
+1100
+1101
+1110
+1111
+
+device cable:
+1 write enable
+16 write address
+16 write data
+4 interrupt code
+1 interrupt
+1 clock
