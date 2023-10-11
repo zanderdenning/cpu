@@ -213,7 +213,7 @@ with open(args.infile, "r") as in_file:
 		
 		data_addr = BOOT_LENGTH
 		code_addr = data_addr + data_position
-		sp_addr = 0x7fff
+		sp_addr = 0xefff
 		hp_addr = code_addr + line_number
 		boot = [
 			decode(["liau", "data", str(data_addr)], 0),

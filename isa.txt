@@ -48,8 +48,8 @@ intermediate registers:
 010 f0
 
 memory map:
-0XXX XXXX XXXX XXXX memory
-1DDD DXXX XXXX XXXX device
+YYYY XXXX XXXX XXXX memory, YYYY != 1111
+1111 DDDD XXXX XXXX device
 
 devices:
 0000 power
