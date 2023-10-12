@@ -53,7 +53,7 @@ YYYY XXXX XXXX XXXX memory, YYYY != 1111
 
 devices:
 0000 power
-0001
+0001 tty
 0010
 0011
 0100

@@ -1,4 +1,5 @@
 import argparse
+import shlex
 
 argparser = argparse.ArgumentParser()
 
@@ -85,6 +86,8 @@ def parse_offset(offset, line, ins):
 def data_to_hex(data):
 	if data[1] == "int":
 		return format(parse_number(data[2]) & 0xffff, "04x")[-4:], 1
+	if data[1] == "string":
+		return "".join((format(ord(c) & 0xffff, "04x")[-4:] for c in data[2][1:-1])) + "0000", len(data[2]) - 1
 
 def decode(i, line):
 	# Instructions
@@ -136,33 +139,26 @@ def decode(i, line):
 		return [parse_intermediate(i[2]) + "0" + parse_reg(i[1]) + "e"]
 	
 	# Pseudoinstructions
-	if i[0] == "liau":
-		num = parse_number(i[2])
-		upper = num // 256
-		if num & 192 == 192:
-			upper += 1
-		return decode(["lui", i[1], str(upper)], line) + decode(["addi", i[1], str(num % 256)], line)
 	if i[0] == "li":
 		num = parse_number(i[2])
 		upper = num // 256
 		if num & 192 == 192:
 			upper += 1
-		return (decode(["lui", i[1], str(upper)], line) if num > 255 else []) + decode(["addi", i[1], str(num % 256)], line)
-	if i[0] == "ldv":
+		return decode(["lui", i[1], str(upper)], line) + decode(["addi", i[1], str(num % 256)], line)
+	if i[0] == "lda":
 		addr = data.get(i[2])
 		if addr != None:
-			if addr < 8:
-				return decode(["lw", i[1], "data", str(addr)], line)
-			else:
-				return decode(["li", i[1], str(addr)], line) + decode(["add", i[1], i[1], "data"], line) + decode(["lw", i[1], i[1], "0"], line)
+			return decode(["li", i[1], str(addr)], line) + decode(["add", i[1], i[1], "data"], line)
 		else:
 			todo.append({
-				"action": "data",
+				"action": "dataaddr",
 				"data": i[2],
 				"line": line,
-				"ins": "liau"
+				"ins": "li"
 			})
-			return decode(["liau", i[1], "0"], line) + decode(["add", i[1], i[1], "data"], line) + decode(["lw", i[1], i[1], "0"], line)
+			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "data"], line)
+	if i[0] == "ldv":
+		return decode(["lda", i[1], i[2]], line) + decode(["lw", i[1], i[1], "0"], line)
 
 with open(args.infile, "r") as in_file:
 	with open(args.outfile or (args.infile.rsplit(".", 1)[0] + ".out"), "wb") as out_file:
@@ -172,7 +168,7 @@ with open(args.infile, "r") as in_file:
 		line_number = 0
 		section = ".comment"
 		for line in in_file.readlines():
-			ins = [a.strip() for a in line.strip().split()]
+			ins = [a.strip() for a in shlex.split(line.split("//")[0].strip(), posix=False)]
 			if not ins:
 				continue
 			if ins[0] and ins[0][0] == ".":
@@ -200,13 +196,13 @@ with open(args.infile, "r") as in_file:
 				current = hex_instructions[patch["line"]]
 				if patch["ins"] == "jump":
 					hex_instructions[patch["line"]] = current[0] + parse_imm(str(labels[patch["label"]] - patch["line"])) + current[3]
-			if patch["action"] == "data":
+			if patch["action"] == "dataaddr":
 				addr = data[patch["data"]]
 				upper = addr // 256
 				if addr & 192 == 192:
 					upper += 1
 				current = hex_instructions[patch["line"]]
-				if patch["ins"] == "liau":
+				if patch["ins"] == "li":
 					hex_instructions[patch["line"]] = parse_imm(str(upper)) + current[2] + current[3]
 					current2 = hex_instructions[patch["line"] + 1]
 					hex_instructions[patch["line"] + 1] = parse_imm(str(addr % 256)) + current[2] + current[3]
@@ -216,10 +212,10 @@ with open(args.infile, "r") as in_file:
 		sp_addr = 0xefff
 		hp_addr = code_addr + line_number
 		boot = [
-			decode(["liau", "data", str(data_addr)], 0),
-			decode(["liau", "code", str(code_addr)], 0),
-			decode(["liau", "sp", str(sp_addr)], 0),
-			decode(["liau", "hp", str(hp_addr)], 0),
+			decode(["li", "data", str(data_addr)], 0),
+			decode(["li", "code", str(code_addr)], 0),
+			decode(["li", "sp", str(sp_addr)], 0),
+			decode(["li", "hp", str(hp_addr)], 0),
 			decode(["add", "pc", "zero", "code"], 0)
 		]
 		for line in boot:
