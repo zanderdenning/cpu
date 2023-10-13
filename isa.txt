@@ -31,7 +31,7 @@ registers:
 0011 code
 0100 sp
 0101 hp
-0110 ret
+0110 bp
 0111 r0
 1000 r1
 1001 r2

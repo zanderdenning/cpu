@@ -1,0 +1,23 @@
+.data
+str1 string "abcd"
+
+.code
+#import programs/print.a
+
+entry:
+int 1 0
+int 1 2
+
+lda r0 str1
+addi sp -3
+sw r0 sp 2
+sw bp sp 1
+add bp pc zero
+addi pc 4
+sw bp sp 0
+j r8 print
+
+addi r8 5
+addi sp 1
+
+jmp 0

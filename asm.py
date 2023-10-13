@@ -8,11 +8,12 @@ argparser.add_argument("-o", "--outfile")
 
 args = argparser.parse_args()
 
-BOOT_LENGTH = 0x9
+BOOT_LENGTH = 14
 
 data = {}
 labels = {}
 todo = []
+imported = []
 
 def parse_number(number):
 	if number[0] == "-":
@@ -41,7 +42,7 @@ def parse_reg(reg):
 		"code": "3",
 		"sp": "4",
 		"hp": "5",
-		"ret": "6",
+		"bp": "6",
 		"r0": "7",
 		"r1": "8",
 		"r2": "9",
@@ -159,13 +160,23 @@ def decode(i, line):
 			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "data"], line)
 	if i[0] == "ldv":
 		return decode(["lda", i[1], i[2]], line) + decode(["lw", i[1], i[1], "0"], line)
+	if i[0] == "lladdr":
+		addr = labels.get(i[2])
+		if addr != None:
+			return decode(["li", i[1], str(addr)], line) + decode(["add", i[1], i[1], "code"], line)
+		else:
+			todo.append({
+				"action": "label",
+				"label": i[2],
+				"line": line,
+				"ins": "li"
+			})
+			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "code"], line)
+	if i[0] == "j":
+		return decode(["lladdr", i[1], i[2]], line) + decode(["add", "pc", i[1], "zero"], line)
 
-with open(args.infile, "r") as in_file:
-	with open(args.outfile or (args.infile.rsplit(".", 1)[0] + ".out"), "wb") as out_file:
-		hex_data = []
-		data_position = 0
-		hex_instructions = []
-		line_number = 0
+def assemble_file(path, counters):
+	with open(path, "r") as in_file:
 		section = ".comment"
 		for line in in_file.readlines():
 			ins = [a.strip() for a in shlex.split(line.split("//")[0].strip(), posix=False)]
@@ -179,50 +190,78 @@ with open(args.infile, "r") as in_file:
 				continue
 			elif section == ".data":
 				hex_dat, width = data_to_hex(ins)
-				data[ins[0]] = data_position
-				hex_data.append(hex_dat)
-				data_position += width
+				data[ins[0]] = counters["data_position"]
+				counters["hex_data"].append(hex_dat)
+				counters["data_position"] += width
 			elif section == ".code":
+				if ins[0][0] == "#":
+					if ins[0] == "#import":
+						if ins[1] not in imported:
+							imported.append(ins[1])
+							assemble_file(ins[1], counters)
+						continue
 				if ins[0][-1] == ":":
-					labels[ins[0][:-1]] = line_number
+					labels[ins[0][:-1]] = counters["line_number"]
 					continue
-				hex_ins = decode(ins, line_number)
-				hex_instructions.extend(hex_ins)
-				line_number += len(hex_ins)
-		hex_instructions.append("0000")
-		line_number += 1
-		for patch in todo:
-			if patch["action"] == "label":
-				current = hex_instructions[patch["line"]]
-				if patch["ins"] == "jump":
-					hex_instructions[patch["line"]] = current[0] + parse_imm(str(labels[patch["label"]] - patch["line"])) + current[3]
-			if patch["action"] == "dataaddr":
-				addr = data[patch["data"]]
-				upper = addr // 256
-				if addr & 192 == 192:
-					upper += 1
-				current = hex_instructions[patch["line"]]
-				if patch["ins"] == "li":
-					hex_instructions[patch["line"]] = parse_imm(str(upper)) + current[2] + current[3]
-					current2 = hex_instructions[patch["line"] + 1]
-					hex_instructions[patch["line"] + 1] = parse_imm(str(addr % 256)) + current[2] + current[3]
-		
-		data_addr = BOOT_LENGTH
-		code_addr = data_addr + data_position
-		sp_addr = 0xefff
-		hp_addr = code_addr + line_number
-		boot = [
-			decode(["li", "data", str(data_addr)], 0),
-			decode(["li", "code", str(code_addr)], 0),
-			decode(["li", "sp", str(sp_addr)], 0),
-			decode(["li", "hp", str(hp_addr)], 0),
-			decode(["add", "pc", "zero", "code"], 0)
-		]
-		for line in boot:
-			for l in line:
-				out_file.write(bytes.fromhex(l))
+				hex_ins = decode(ins, counters["line_number"])
+				counters["hex_instructions"].extend(hex_ins)
+				counters["line_number"] += len(hex_ins)
 
-		for dat in hex_data:
-			out_file.write(bytes.fromhex(dat))
-		for ins in hex_instructions:
-			out_file.write(bytes.fromhex(ins))
+with open(args.outfile or (args.infile.rsplit(".", 1)[0] + ".out"), "wb") as out_file:
+	counters = {
+		"hex_data": [],
+		"data_position": 0,
+		"hex_instructions": [],
+		"line_number": 0
+	}
+
+	imported.append(args.infile)
+	assemble_file(args.infile, counters)
+	
+	counters["hex_instructions"].append("0000")
+	counters["line_number"] += 1
+	for patch in todo:
+		if patch["action"] == "label":
+			addr = data[patch["data"]]
+			upper = addr // 256
+			if addr & 192 == 192:
+				upper += 1
+			current = counters["hex_instructions"][patch["line"]]
+			if patch["ins"] == "jump":
+				counters["hex_instructions"][patch["line"]] = current[0] + parse_imm(str(labels[patch["label"]] - patch["line"])) + current[3]
+			if patch["ins"] == "li":
+				counters["hex_instructions"][patch["line"]] = parse_imm(str(upper)) + current[2] + current[3]
+				current2 = counters["hex_instructions"][patch["line"] + 1]
+				counters["hex_instructions"][patch["line"] + 1] = parse_imm(str(addr % 256)) + current[2] + current[3]
+		if patch["action"] == "dataaddr":
+			addr = data[patch["data"]]
+			upper = addr // 256
+			if addr & 192 == 192:
+				upper += 1
+			current = counters["hex_instructions"][patch["line"]]
+			if patch["ins"] == "li":
+				counters["hex_instructions"][patch["line"]] = parse_imm(str(upper)) + current[2] + current[3]
+				current2 = counters["hex_instructions"][patch["line"] + 1]
+				counters["hex_instructions"][patch["line"] + 1] = parse_imm(str(addr % 256)) + current[2] + current[3]
+	
+	data_addr = BOOT_LENGTH
+	code_addr = data_addr + counters["data_position"]
+	sp_addr = 0xefff
+	hp_addr = code_addr + counters["line_number"]
+	bp_addr = sp_addr
+	boot = [
+		decode(["li", "data", str(data_addr)], 0),
+		decode(["li", "code", str(code_addr)], 0),
+		decode(["li", "sp", str(sp_addr)], 0),
+		decode(["li", "hp", str(hp_addr)], 0),
+		decode(["li", "bp", str(bp_addr)], 0),
+		decode(["j", "r0", "entry"], 0)
+	]
+	for line in boot:
+		for l in line:
+			out_file.write(bytes.fromhex(l))
+
+	for dat in counters["hex_data"]:
+		out_file.write(bytes.fromhex(dat))
+	for ins in counters["hex_instructions"]:
+		out_file.write(bytes.fromhex(ins))

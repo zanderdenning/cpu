@@ -2056,7 +2056,7 @@
     </comp>
     <comp lib="4" loc="(970,140)" name="Register">
       <a name="appearance" val="classic"/>
-      <a name="label" val="ret"/>
+      <a name="label" val="bp"/>
       <a name="showInTab" val="true"/>
       <a name="width" val="16"/>
     </comp>

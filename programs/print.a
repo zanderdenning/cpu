@@ -1,8 +1,36 @@
-.data
-str1 string "abcdefghijklmnopqrstuvwxyzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-str2 string "e"
-
 .code
+
+print:
+add bp sp zero
+
+addi sp -3
+sw r0 sp 0
+sw r1 sp 1
+sw r2 sp 2
+
+lw r0 bp 2
+li r2 0xf100
+
+start:
+lw r1 r0 0
+sw r1 r2 0
+addi r0 1
+addi r2 1
+sub zero r1 zero
+jne start
+
+int 1 1
+
+lw r0 sp 0
+lw r1 sp 1
+lw r2 sp 2
+addi sp 3
+
+lw bp sp 1
+lw pc sp 0
+
+
+.comment
 
 int 1 0 // reset tty
 int 1 2 // clear tty
