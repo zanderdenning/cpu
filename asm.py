@@ -222,7 +222,7 @@ with open(args.outfile or (args.infile.rsplit(".", 1)[0] + ".out"), "wb") as out
 	counters["line_number"] += 1
 	for patch in todo:
 		if patch["action"] == "label":
-			addr = data[patch["data"]]
+			addr = labels[patch["label"]]
 			upper = addr // 256
 			if addr & 192 == 192:
 				upper += 1

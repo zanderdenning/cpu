@@ -4,6 +4,20 @@
 
 #define REG_ZERO 0
 #define REG_PC 1
+#define REG_DATA 2
+#define REG_CODE 3
+#define REG_SP 4
+#define REG_HP 5
+#define REG_BP 6
+#define REG_R0 7
+#define REG_R1 8
+#define REG_R2 9
+#define REG_R3 10
+#define REG_R4 11
+#define REG_R5 12
+#define REG_R6 13
+#define REG_R7 14
+#define REG_R8 15
 #define REG_M0 16
 #define REG_M1 17
 #define REG_F0 18
@@ -78,10 +92,13 @@ void execute(int16_t ins) {
 			update_f0(registers[rd]);
 			break;
 		case 0x8:
-			registers[rd] = memory[registers[ra] + signed_nibble(rb)];
+			registers[rd] = memory[(uint16_t) (registers[ra] + signed_nibble(rb))];
 			break;
 		case 0x9:
-			memory[registers[ra] + signed_nibble(rb)] = registers[rd];
+			printf("%x\n", (uint16_t) (registers[ra] + signed_nibble(rb)));
+			printf("%x\n", (uint16_t) registers[rd]);
+			memory[(uint16_t) (registers[ra] + signed_nibble(rb))] = registers[rd];
+			printf("e\n");
 			break;
 		case 0xa:
 			registers[rd] += imm;
@@ -94,20 +111,16 @@ void execute(int16_t ins) {
 			break;
 		case 0xd:
 			for (int i = 0; i < 19; i ++) {
-				printf("%x: %x\n", i, registers[i]);
+				printf("%02x: %04x\n", i, (uint16_t) registers[i]);
 			}
+			printf("%04x", (uint16_t) memory[(uint16_t) registers[REG_SP]]);
+			exit(0);
 			break;
 		case 0xe:
 			if (rb & 0b1000) {
 				printf("sint not yet implemented");
 			}
 			else {
-				if (rb == 0b110) {
-					for (int i = 0; i < 19; i ++) {
-						printf("%x: %x\n", i, registers[i]);
-					}
-					printf("%d\n", registers[REG_F0]);
-				}
 				if (registers[REG_F0] & rb & 0b111) {
 					registers[REG_PC] += jimm - 1;
 				}
@@ -131,13 +144,22 @@ int main(int argc, char* argv[]) {
 	}
 
 	memory = malloc(sizeof(int16_t) * 0xffff);
+	if (memory == NULL) {
+		printf("Could not malloc memory");
+		return 1;
+	}
 	registers = calloc(19, sizeof(int16_t));
+	if (registers == NULL) {
+		printf("Could not malloc registers");
+		return 1;
+	}
 
 	int read_index = 0;
 	while (fread(memory + read_index, sizeof(int16_t), 1, file) != 0) {
 		read_index ++;
 	}
 	while (1) {
+		printf("%04x: %04x\n", (uint16_t) registers[REG_PC], (uint16_t) memory[registers[REG_PC]]);
 		execute(memory[registers[REG_PC]]);
 		registers[REG_PC] ++;
 		registers[REG_ZERO] = 0;
