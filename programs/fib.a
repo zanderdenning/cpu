@@ -10,12 +10,13 @@ ldv r2 value1
 ldv r3 value2
 ldv r5 target
 ldv r6 addr
+add r0 zero zero
 
 start:
 add r4 r0 r3
 add r3 r0 r2
 add r2 r2 r4
-sw r2 sp 0
+sw r2 r6 0
 
 sub zero r2 r5
 jge exit
