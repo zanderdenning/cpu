@@ -58,6 +58,15 @@ char *reg_to_str(int16_t reg) {
 	}
 }
 
+int16_t str_to_reg(char *str) {
+	for (int16_t i = 0; i < 16; i ++) {
+		if (strcmp(reg_to_str(i), str) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 char *math_op(int16_t op) {
 	switch (op) {
 		case 0x0: return "mul";
@@ -303,6 +312,7 @@ void debug() {
 
 	uint16_t *breakpoints = NULL;
 	size_t breakpoints_length = 0;
+	int highlight = -1;
 
 	scrollok(win_out, 1);
 	wsetscrreg(win_out, 1, 8);
@@ -356,7 +366,12 @@ void debug() {
 			wmove(win_mem, i + 1, 1);
 			wprintw(win_mem, "[%04x] ", memory_pos + (uint16_t) (i * 8));
 			for (int j = 0; j < 8; j ++) {
-				wprintw(win_mem, "%04x ", (uint16_t) memory[memory_pos + (uint16_t) (i * 8 + j)]);
+				if (highlight != -1 && memory_pos + (uint16_t) (i * 8 + j) == (uint16_t) registers[highlight]) {
+					wattron(win_mem, A_REVERSE);
+				}
+				wprintw(win_mem, "%04x", (uint16_t) memory[memory_pos + (uint16_t) (i * 8 + j)]);
+				wattroff(win_mem, A_REVERSE);
+				wprintw(win_mem, " ");
 			}
 		}
 		wrefresh(win_mem);
@@ -390,10 +405,18 @@ void debug() {
 		}
 		else if (strcmp(cmd, "m") == 0) {
 			cmd = strtok(NULL, " ");
+			if (cmd == NULL) {
+				print_debug(win_out, "Missing address.\n");
+				continue;
+			}
 			memory_pos = strtoul(cmd, &cmd, 16);
 		}
 		else if (strcmp(cmd, "b") == 0) {
 			cmd = strtok(NULL, " ");
+			if (cmd == NULL) {
+				print_debug(win_out, "Missing address.\n");
+				continue;
+			}
 			uint16_t bp = strtoul(cmd, &cmd, 16);
 			breakpoints_length ++;
 			breakpoints = realloc(breakpoints, sizeof(uint16_t) * breakpoints_length);
@@ -435,6 +458,23 @@ void debug() {
 		else if (strcmp(cmd, "res") == 0) {
 			reset_registers();
 			running = 1;
+		}
+		else if (strcmp(cmd, "hl") == 0) {
+			cmd = strtok(NULL, " ");
+			if (cmd == NULL) {
+				print_debug(win_out, "Missing register.\n");
+				continue;
+			}
+			if (strcmp(cmd, "reset") == 0) {
+				highlight = -1;
+				continue;
+			}
+			int16_t new_hl = str_to_reg(cmd);
+			if (new_hl == -1) {
+				print_debug(win_out, "Invalid register.\n");
+				continue;
+			}
+			highlight = new_hl;
 		}
 		registers[REG_ZERO] = 0;
 	}
