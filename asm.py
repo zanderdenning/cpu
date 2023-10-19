@@ -172,8 +172,37 @@ def decode(i, line):
 				"ins": "li"
 			})
 			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "code"], line)
+	if i[0] == "llbaddr":
+		addr = labels.get(i[2])
+		if addr != None:
+			return decode(["li", i[1], str(addr - 1)], line) + decode(["add", i[1], i[1], "code"], line)
+		else:
+			todo.append({
+				"action": "label",
+				"label": i[2],
+				"line": line,
+				"ins": "li",
+				"offset": -1
+			})
+			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "code"], line)
 	if i[0] == "j":
-		return decode(["lladdr", i[1], i[2]], line) + decode(["add", "pc", i[1], "zero"], line)
+		return decode(["llbaddr", i[1], i[2]], line) + decode(["add", "pc", i[1], "zero"], line)
+	if i[0] == "call":
+		return decode(["sw", "bp", "sp", "1"], line) + decode(["add", "bp", "pc", "zero"], line) + decode(["addi", "bp", "6"], line) + decode(["sw", "bp", "sp", "0"], line) + decode(["j", i[1], i[2]], line)
+	if i[0] == "ret":
+		return decode(["lw", "bp", "sp", "1"], line) + decode(["lw", "pc", "sp", "0"], line)
+	if i[0] == "push":
+		reg_count = min(len(i) - 1, 8)
+		out = decode(["addi", "sp", str(-1 * reg_count)], line)
+		for j in range(reg_count):
+			out += decode(["sw", i[j + 1], "sp", str(j)], line)
+		return out
+	if i[0] == "pop":
+		reg_count = min(len(i) - 1, 8)
+		out = []
+		for j in range(reg_count):
+			out += decode(["lw", i[j + 1], "sp", str(j)], line)
+		return out + decode(["addi", "sp", str(reg_count)], line)
 
 def assemble_file(path, counters):
 	with open(path, "r") as in_file:
@@ -229,12 +258,12 @@ with open(args.outfile or (args.infile.rsplit(".", 1)[0] + ".out"), "wb") as out
 			current = counters["hex_instructions"][patch["line"]]
 			if patch["ins"] == "jump":
 				counters["hex_instructions"][patch["line"]] = current[0] + parse_imm(str(labels[patch["label"]] - patch["line"])) + current[3]
-			if patch["ins"] == "li":
+			elif patch["ins"] == "li":
 				counters["hex_instructions"][patch["line"]] = parse_imm(str(upper)) + current[2] + current[3]
 				current2 = counters["hex_instructions"][patch["line"] + 1]
 				counters["hex_instructions"][patch["line"] + 1] = parse_imm(str(addr % 256)) + current[2] + current[3]
 		if patch["action"] == "dataaddr":
-			addr = data[patch["data"]]
+			addr = data[patch["data"]] + (patch.get("offset") or 0)
 			upper = addr // 256
 			if addr & 192 == 192:
 				upper += 1

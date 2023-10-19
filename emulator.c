@@ -36,6 +36,9 @@
 int16_t *memory;
 int16_t *registers;
 
+int mode = 0;
+WINDOW *win_out;
+
 char *reg_to_str(int16_t reg) {
 	switch (reg) {
 		case 0x0: return "zero";
@@ -194,6 +197,16 @@ void reset_registers() {
 	}
 }
 
+void print_debug(WINDOW *window, char *f, ...) {
+	va_list args;
+	int y, x;
+	getyx(window, y, x);
+	wmove(window, 9, 1);
+	va_start(args, f);
+	vwprintw(window, f, args);
+	va_end(args);
+}
+
 int execute(int16_t ins) {
 	int16_t opcode = (ins & 0x000f) >> 0;
 	int16_t rd = (ins & 0x00f0) >> 4;
@@ -256,7 +269,27 @@ int execute(int16_t ins) {
 			printf("math not yet implemented");
 			break;
 		case 0xd:
-			return 1;
+			switch (rd) {
+				case 0x0:
+					return 1;
+					break;
+				case 0x1:
+					if (rb == 0x1) {
+						for (uint16_t i = 0; 1; i ++) {
+							char to_print = memory[i + (uint16_t) 0xf100] & 0xff;
+							if (to_print == '\0') {
+								break;
+							}
+							if (mode == 0) {
+								printf("%c", to_print);
+							}
+							else if (mode == 1) {
+								print_debug(win_out, "%c", to_print);
+							}
+						}
+					}
+					break;
+			}
 			break;
 		case 0xe:
 			if (rb & 0b1000) {
@@ -276,6 +309,8 @@ int execute(int16_t ins) {
 }
 
 void run() {
+	mode = 0;
+
 	while (1) {
 		int res = execute((uint16_t) memory[(uint16_t) registers[REG_PC]]);
 		if (res) {
@@ -286,24 +321,16 @@ void run() {
 	}
 }
 
-void print_debug(WINDOW *window, char *f, ...) {
-	va_list args;
-	int y, x;
-	getyx(window, y, x);
-	wmove(window, 9, 1);
-	va_start(args, f);
-	vwprintw(window, f, args);
-	va_end(args);
-}
-
 void debug() {
+	mode = 1;
+
 	int maxh, maxw;
 	initscr();
 	getmaxyx(stdscr, maxh, maxw);
 	WINDOW *win_input = newwin(3, COMMAND_SIZE + 9, 0, 0);
 	WINDOW *win_src = newwin(maxh, maxw - COMMAND_SIZE - 9, 0, COMMAND_SIZE + 9);
 	WINDOW *win_regs = newwin(maxh - 3, 20, 3, COMMAND_SIZE - 11);
-	WINDOW *win_out = newwin(10, COMMAND_SIZE - 11, 3, 0);
+	win_out = newwin(10, COMMAND_SIZE - 11, 3, 0);
 	WINDOW *win_mem = newwin(maxh - 13, COMMAND_SIZE - 11, 13, 0);
 	char *command = malloc(sizeof(char) * COMMAND_SIZE);
 	char *src = malloc(sizeof(char) * maxw - COMMAND_SIZE - 10);

@@ -11,13 +11,8 @@ int 1 2
 lda r0 str1
 addi sp -3
 sw r0 sp 2
-sw bp sp 1
-add bp pc zero
-addi pc 4
-sw bp sp 0
-j r8 print
+call r8 print
 
-addi r8 5
-addi sp 1
+addi sp 3
 
-jmp 0
+int 0 0
