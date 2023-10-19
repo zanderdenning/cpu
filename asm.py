@@ -1,5 +1,6 @@
 import argparse
 import shlex
+import codecs
 
 argparser = argparse.ArgumentParser()
 
@@ -88,7 +89,8 @@ def data_to_hex(data):
 	if data[1] == "int":
 		return format(parse_number(data[2]) & 0xffff, "04x")[-4:], 1
 	if data[1] == "string":
-		return "".join((format(ord(c) & 0xffff, "04x")[-4:] for c in data[2][1:-1])) + "0000", len(data[2]) - 1
+		string = codecs.getdecoder("unicode_escape")(data[2][1:-1])[0]
+		return "".join((format(ord(c) & 0xffff, "04x")[-4:] for c in string)) + "0000", len(string) + 1
 
 def decode(i, line):
 	# Instructions
@@ -172,23 +174,23 @@ def decode(i, line):
 				"ins": "li"
 			})
 			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "code"], line)
-	if i[0] == "llbaddr":
-		addr = labels.get(i[2])
-		if addr != None:
-			return decode(["li", i[1], str(addr - 1)], line) + decode(["add", i[1], i[1], "code"], line)
-		else:
-			todo.append({
-				"action": "label",
-				"label": i[2],
-				"line": line,
-				"ins": "li",
-				"offset": -1
-			})
-			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "code"], line)
+	# if i[0] == "llbaddr":
+	# 	addr = labels.get(i[2])
+	# 	if addr != None:
+	# 		return decode(["li", i[1], str(addr - 1)], line) + decode(["add", i[1], i[1], "code"], line)
+	# 	else:
+	# 		todo.append({
+	# 			"action": "label",
+	# 			"label": i[2],
+	# 			"line": line,
+	# 			"ins": "li",
+	# 			"offset": 0
+	# 		})
+	# 		return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "code"], line)
 	if i[0] == "j":
-		return decode(["llbaddr", i[1], i[2]], line) + decode(["add", "pc", i[1], "zero"], line)
+		return decode(["lladdr", i[1], i[2]], line) + decode(["add", "pc", i[1], "zero"], line)
 	if i[0] == "call":
-		return decode(["sw", "bp", "sp", "1"], line) + decode(["add", "bp", "pc", "zero"], line) + decode(["addi", "bp", "6"], line) + decode(["sw", "bp", "sp", "0"], line) + decode(["j", i[1], i[2]], line)
+		return decode(["sw", "bp", "sp", "1"], line) + decode(["add", "bp", "pc", "zero"], line) + decode(["addi", "bp", "7"], line) + decode(["sw", "bp", "sp", "0"], line) + decode(["j", i[1], i[2]], line)
 	if i[0] == "ret":
 		return decode(["lw", "bp", "sp", "1"], line) + decode(["lw", "pc", "sp", "0"], line)
 	if i[0] == "push":

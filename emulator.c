@@ -305,6 +305,9 @@ int execute(int16_t ins) {
 			printf("fpt not yet implemented");
 			break;
 	}
+	if (rd == REG_PC && !(opcode & 0b1000 && (opcode == 0b1001 || (opcode & 0b0100 && !(opcode == 0b1110 && rb & 0b1000))))) {
+		return 2;
+	}
 	return 0;
 }
 
@@ -313,10 +316,12 @@ void run() {
 
 	while (1) {
 		int res = execute((uint16_t) memory[(uint16_t) registers[REG_PC]]);
-		if (res) {
+		if (res == 1) {
 			exit(0);
 		}
-		registers[REG_PC] ++;
+		if (res != 2) {
+			registers[REG_PC] ++;
+		}
 		registers[REG_ZERO] = 0;
 	}
 }
@@ -422,12 +427,14 @@ void debug() {
 		else if (strcmp(cmd, "s") == 0) {
 			running = 1;
 			int res = execute((uint16_t) memory[(uint16_t) registers[REG_PC]]);
-			if (res) {
+			if (res == 1) {
 				print_debug(win_out, "Execution complete.\n");
 				running = 0;
 				continue;
 			}
-			registers[REG_PC] ++;
+			if (res != 2) {
+				registers[REG_PC] ++;
+			}
 			registers[REG_ZERO] = 0;
 		}
 		else if (strcmp(cmd, "m") == 0) {
@@ -470,12 +477,14 @@ void debug() {
 				}
 				started = 1;
 				int res = execute((uint16_t) memory[(uint16_t) registers[REG_PC]]);
-				if (res) {
+				if (res == 1) {
 					print_debug(win_out, "Execution complete.\n");
 					running = 0;
 					done = 1;
 				}
-				registers[REG_PC] ++;
+				if (res != 2) {
+					registers[REG_PC] ++;
+				}
 				registers[REG_ZERO] = 0;
 				if (done) {
 					break;

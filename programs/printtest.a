@@ -1,5 +1,6 @@
 .data
 str1 string "abcd"
+str2 string "ef\ngh"
 
 .code
 #import programs/print.a
@@ -12,7 +13,12 @@ lda r0 str1
 addi sp -3
 sw r0 sp 2
 call r8 print
+addi sp 3
 
+lda r0 str2
+addi sp -3
+sw r0 sp 2
+call r8 print
 addi sp 3
 
 int 0 0
