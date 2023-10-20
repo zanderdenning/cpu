@@ -4,10 +4,8 @@ print:
 add bp sp zero
 
 push r0 r1 r2
-// addi sp -3
-// sw r0 sp 0
-// sw r1 sp 1
-// sw r2 sp 2
+
+int 1 0
 
 lw r0 bp 2
 li r2 0xf100

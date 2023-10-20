@@ -4,11 +4,13 @@
 entry:
 li r1 0xf200 // Keyboard
 li r2 0x4000 // Buffer
-add r3 r2 zero // Current position
 li r4 0x000a // Newline
 
-oloop:
+ooloop:
+add r3 r2 zero // Current position
 int 2 0
+
+oloop:
 
 iloop:
 lw r0 r1 0
@@ -24,6 +26,7 @@ jeq end
 // Otherwise write to Buffer
 sw r0 r3 0
 addi r3 1
+int 2 1
 jmp oloop
 
 end:
@@ -34,5 +37,7 @@ addi sp -3
 sw r2 sp 2
 call r8 print
 addi sp 3
+
+jmp ooloop
 
 int 0 0
