@@ -16,6 +16,13 @@ labels = {}
 todo = []
 imported = []
 
+def label_namespaced(label, namespace):
+	parts = label.split(".")
+	if len(parts) == 1:
+		return "%s.%s" % (namespace, label)
+	else:
+		return label
+
 def parse_number(number):
 	if number[0] == "-":
 		return -1 * parse_number(number[1:])
@@ -69,10 +76,11 @@ def parse_intermediate(inter):
 	if inter == "2" or inter == "f0":
 		return "a"
 
-def parse_offset(offset, line, ins):
+def parse_offset(offset, line, ins, namespace):
 	number = parse_number(offset)
 	if number != None:
 		return parse_imm(offset)
+	offset = label_namespaced(offset, namespace)
 	label = labels.get(offset, None)
 	if label != None:
 		return parse_imm(str(label - line))
@@ -92,7 +100,7 @@ def data_to_hex(data):
 		string = codecs.getdecoder("unicode_escape")(data[2][1:-1])[0]
 		return "".join((format(ord(c) & 0xffff, "04x")[-4:] for c in string)) + "0000", len(string) + 1
 
-def decode(i, line):
+def decode(i, line, ns):
 	# Instructions
 	if i[0] == "add":
 		return [parse_reg(i[3]) + parse_reg(i[2]) + parse_reg(i[1]) + "0"]
@@ -125,19 +133,19 @@ def decode(i, line):
 	if i[0] == "int":
 		return [parse_imm_short(i[2]) + "0" + parse_imm_short(i[1]) + "d"]
 	if i[0] == "jlt":
-		return ["1" + parse_offset(i[1], line, "jump") + "e"]
+		return ["1" + parse_offset(i[1], line, "jump", ns) + "e"]
 	if i[0] == "jeq":
-		return ["2" + parse_offset(i[1], line, "jump") + "e"]
+		return ["2" + parse_offset(i[1], line, "jump", ns) + "e"]
 	if i[0] == "jle":
-		return ["3" + parse_offset(i[1], line, "jump") + "e"]
+		return ["3" + parse_offset(i[1], line, "jump", ns) + "e"]
 	if i[0] == "jgt":
-		return ["4" + parse_offset(i[1], line, "jump") + "e"]
+		return ["4" + parse_offset(i[1], line, "jump", ns) + "e"]
 	if i[0] == "jne":
-		return ["5" + parse_offset(i[1], line, "jump") + "e"]
+		return ["5" + parse_offset(i[1], line, "jump", ns) + "e"]
 	if i[0] == "jge":
-		return ["6" + parse_offset(i[1], line, "jump") + "e"]
+		return ["6" + parse_offset(i[1], line, "jump", ns) + "e"]
 	if i[0] == "jmp":
-		return ["7" + parse_offset(i[1], line, "jump") + "e"]
+		return ["7" + parse_offset(i[1], line, "jump", ns) + "e"]
 	if i[0] == "sint":
 		return [parse_intermediate(i[2]) + "0" + parse_reg(i[1]) + "e"]
 	
@@ -147,11 +155,11 @@ def decode(i, line):
 		upper = num // 256
 		if num & 192 == 192:
 			upper += 1
-		return decode(["lui", i[1], str(upper)], line) + decode(["addi", i[1], str(num % 256)], line)
+		return decode(["lui", i[1], str(upper)], line, ns) + decode(["addi", i[1], str(num % 256)], line, ns)
 	if i[0] == "lda":
 		addr = data.get(i[2])
 		if addr != None:
-			return decode(["li", i[1], str(addr)], line) + decode(["add", i[1], i[1], "data"], line)
+			return decode(["li", i[1], str(addr)], line, ns) + decode(["add", i[1], i[1], "data"], line, ns)
 		else:
 			todo.append({
 				"action": "dataaddr",
@@ -159,54 +167,41 @@ def decode(i, line):
 				"line": line,
 				"ins": "li"
 			})
-			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "data"], line)
+			return decode(["li", i[1], "0"], line, ns) + decode(["add", i[1], i[1], "data"], line, ns)
 	if i[0] == "ldv":
-		return decode(["lda", i[1], i[2]], line) + decode(["lw", i[1], i[1], "0"], line)
+		return decode(["lda", i[1], i[2]], line, ns) + decode(["lw", i[1], i[1], "0"], line, ns)
 	if i[0] == "lladdr":
-		addr = labels.get(i[2])
+		addr = labels.get(label_namespaced(i[2], ns))
 		if addr != None:
-			return decode(["li", i[1], str(addr)], line) + decode(["add", i[1], i[1], "code"], line)
+			return decode(["li", i[1], str(addr)], line, ns) + decode(["add", i[1], i[1], "code"], line, ns)
 		else:
 			todo.append({
 				"action": "label",
-				"label": i[2],
+				"label": label_namespaced(i[2], ns),
 				"line": line,
 				"ins": "li"
 			})
-			return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "code"], line)
-	# if i[0] == "llbaddr":
-	# 	addr = labels.get(i[2])
-	# 	if addr != None:
-	# 		return decode(["li", i[1], str(addr - 1)], line) + decode(["add", i[1], i[1], "code"], line)
-	# 	else:
-	# 		todo.append({
-	# 			"action": "label",
-	# 			"label": i[2],
-	# 			"line": line,
-	# 			"ins": "li",
-	# 			"offset": 0
-	# 		})
-	# 		return decode(["li", i[1], "0"], line) + decode(["add", i[1], i[1], "code"], line)
+			return decode(["li", i[1], "0"], line, ns) + decode(["add", i[1], i[1], "code"], line, ns)
 	if i[0] == "j":
-		return decode(["lladdr", i[1], i[2]], line) + decode(["add", "pc", i[1], "zero"], line)
+		return decode(["lladdr", i[1], i[2]], line, ns) + decode(["add", "pc", i[1], "zero"], line, ns)
 	if i[0] == "call":
-		return decode(["sw", "bp", "sp", "1"], line) + decode(["add", "bp", "pc", "zero"], line) + decode(["addi", "bp", "7"], line) + decode(["sw", "bp", "sp", "0"], line) + decode(["j", i[1], i[2]], line)
+		return decode(["sw", "bp", "sp", "1"], line, ns) + decode(["add", "bp", "pc", "zero"], line, ns) + decode(["addi", "bp", "7"], line, ns) + decode(["sw", "bp", "sp", "0"], line, ns) + decode(["j", i[1], i[2]], line, ns)
 	if i[0] == "ret":
-		return decode(["lw", "bp", "sp", "1"], line) + decode(["lw", "pc", "sp", "0"], line)
+		return decode(["lw", "bp", "sp", "1"], line, ns) + decode(["lw", "pc", "sp", "0"], line, ns)
 	if i[0] == "push":
 		reg_count = min(len(i) - 1, 8)
-		out = decode(["addi", "sp", str(-1 * reg_count)], line)
+		out = decode(["addi", "sp", str(-1 * reg_count)], line, ns)
 		for j in range(reg_count):
-			out += decode(["sw", i[j + 1], "sp", str(j)], line)
+			out += decode(["sw", i[j + 1], "sp", str(j)], line, ns)
 		return out
 	if i[0] == "pop":
 		reg_count = min(len(i) - 1, 8)
 		out = []
 		for j in range(reg_count):
-			out += decode(["lw", i[j + 1], "sp", str(j)], line)
-		return out + decode(["addi", "sp", str(reg_count)], line)
+			out += decode(["lw", i[j + 1], "sp", str(j)], line, ns)
+		return out + decode(["addi", "sp", str(reg_count)], line, ns)
 
-def assemble_file(path, counters):
+def assemble_file(path, counters, ns):
 	with open(path, "r") as in_file:
 		section = ".comment"
 		for line in in_file.readlines():
@@ -229,12 +224,12 @@ def assemble_file(path, counters):
 					if ins[0] == "#import":
 						if ins[1] not in imported:
 							imported.append(ins[1])
-							assemble_file(ins[1], counters)
+							assemble_file(ins[2], counters, ins[1])
 						continue
 				if ins[0][-1] == ":":
-					labels[ins[0][:-1]] = counters["line_number"]
+					labels[label_namespaced(ins[0][:-1], ns)] = counters["line_number"]
 					continue
-				hex_ins = decode(ins, counters["line_number"])
+				hex_ins = decode(ins, counters["line_number"], ns)
 				counters["hex_instructions"].extend(hex_ins)
 				counters["line_number"] += len(hex_ins)
 
@@ -247,7 +242,7 @@ with open(args.outfile or (args.infile.rsplit(".", 1)[0] + ".out"), "wb") as out
 	}
 
 	imported.append(args.infile)
-	assemble_file(args.infile, counters)
+	assemble_file(args.infile, counters, "main")
 	
 	counters["hex_instructions"].append("0000")
 	counters["line_number"] += 1
@@ -281,12 +276,12 @@ with open(args.outfile or (args.infile.rsplit(".", 1)[0] + ".out"), "wb") as out
 	hp_addr = code_addr + counters["line_number"]
 	bp_addr = sp_addr
 	boot = [
-		decode(["li", "data", str(data_addr)], 0),
-		decode(["li", "code", str(code_addr)], 0),
-		decode(["li", "sp", str(sp_addr)], 0),
-		decode(["li", "hp", str(hp_addr)], 0),
-		decode(["li", "bp", str(bp_addr)], 0),
-		decode(["j", "r0", "entry"], 0)
+		decode(["li", "data", str(data_addr)], 0, "main"),
+		decode(["li", "code", str(code_addr)], 0, "main"),
+		decode(["li", "sp", str(sp_addr)], 0, "main"),
+		decode(["li", "hp", str(hp_addr)], 0, "main"),
+		decode(["li", "bp", str(bp_addr)], 0, "main"),
+		decode(["j", "r0", "main"], 0, "main")
 	]
 	for line in boot:
 		for l in line:

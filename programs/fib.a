@@ -6,6 +6,7 @@ addr int 0x30
 
 .code
 
+main:
 ldv r2 value1
 ldv r3 value2
 ldv r5 target

@@ -3,22 +3,22 @@ str1 string "abcd"
 str2 string "ef\ngh"
 
 .code
-#import programs/print.a
+#import print lib/print.a
 
-entry:
+main:
 int 1 0
 int 1 2
 
 lda r0 str1
 addi sp -3
 sw r0 sp 2
-call r8 print
+call r8 print.printstr
 addi sp 3
 
 lda r0 str2
 addi sp -3
 sw r0 sp 2
-call r8 print
+call r8 print.printstr
 addi sp 3
 
 int 0 0

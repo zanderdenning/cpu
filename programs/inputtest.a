@@ -1,0 +1,24 @@
+.code
+#import print lib/print.a
+#import input lib/input.a
+
+main:
+li r2 0x4000 // Buffer
+
+main:start:
+
+// Call readln
+addi sp -3
+sw r2 sp 2
+call r8 input.readln
+addi sp 3
+
+// Call printstr
+addi sp -3
+sw r2 sp 2
+call r8 print.printstr
+addi sp 3
+
+jmp main:start
+
+int 0 0

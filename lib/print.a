@@ -1,6 +1,6 @@
 .code
 
-print:
+printstr:
 add bp sp zero
 
 push r0 r1 r2
@@ -10,13 +10,13 @@ int 1 0
 lw r0 bp 2
 li r2 0xf100
 
-start:
+printstr:start:
 lw r1 r0 0
 sw r1 r2 0
 addi r0 1
 addi r2 1
 sub zero r1 zero
-jne start
+jne printstr:start
 
 int 1 1
 

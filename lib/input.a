@@ -1,0 +1,35 @@
+.code
+
+readln:
+add bp sp zero
+
+push r0 r1 r2 r3 r4
+
+lw r2 bp 2
+li r1 0xf200
+li r4 0x000a
+
+add r3 r2 zero
+int 2 0
+
+readln:start:
+lw r0 r1 0
+
+sub zero r0 zero
+jeq readln:start
+
+sub zero r0 r4
+jeq readln:end
+
+sw r0 r3 0
+addi r3 1
+int 2 1
+jmp readln:start
+
+readln:end:
+sw zero r3 0
+int 2 1
+
+pop r0 r1 r2 r3 r4
+
+ret
