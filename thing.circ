@@ -50,7 +50,9 @@
     </tool>
     <tool lib="1" name="NOT Gate"/>
     <tool lib="1" name="AND Gate"/>
-    <tool lib="1" name="OR Gate"/>
+    <tool lib="1" name="OR Gate">
+      <a name="facing" val="north"/>
+    </tool>
   </toolbar>
   <circuit name="main">
     <a name="appearance" val="logisim_evolution"/>
@@ -186,6 +188,9 @@
       <a name="color" val="#00ff00"/>
       <a name="trigger" val="falling"/>
     </comp>
+    <comp lib="5" loc="(1060,480)" name="Button">
+      <a name="facing" val="north"/>
+    </comp>
     <comp lib="5" loc="(1070,560)" name="Keyboard"/>
     <comp lib="5" loc="(700,540)" name="Button">
       <a name="facing" val="south"/>
@@ -207,6 +212,7 @@
     <wire from="(1030,650)" to="(1050,650)"/>
     <wire from="(1050,310)" to="(1050,360)"/>
     <wire from="(1050,310)" to="(1060,310)"/>
+    <wire from="(1060,460)" to="(1060,480)"/>
     <wire from="(1060,560)" to="(1060,600)"/>
     <wire from="(1060,560)" to="(1070,560)"/>
     <wire from="(1070,330)" to="(1070,360)"/>
@@ -217,12 +223,9 @@
     <wire from="(1090,340)" to="(1090,360)"/>
     <wire from="(1090,570)" to="(1090,580)"/>
     <wire from="(1100,410)" to="(1120,410)"/>
-    <wire from="(1100,580)" to="(1100,600)"/>
-    <wire from="(1100,580)" to="(1190,580)"/>
     <wire from="(1120,590)" to="(1120,600)"/>
     <wire from="(1120,590)" to="(1210,590)"/>
     <wire from="(1130,650)" to="(1150,650)"/>
-    <wire from="(1190,570)" to="(1190,580)"/>
     <wire from="(1210,570)" to="(1210,590)"/>
     <wire from="(160,450)" to="(190,450)"/>
     <wire from="(180,340)" to="(200,340)"/>
@@ -4552,12 +4555,14 @@
       <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="255" y="288">C</text>
       <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="239" y="288">EN</text>
       <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="202" y="288">CLK</text>
+      <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="233" y="358">CLR</text>
       <circ-anchor facing="east" x="270" y="320"/>
+      <circ-port dir="in" pin="1380,810" x="230" y="370"/>
       <circ-port dir="in" pin="180,290" x="190" y="320"/>
       <circ-port dir="out" pin="1090,820" x="200" y="270"/>
       <circ-port dir="out" pin="1170,840" x="220" y="270"/>
       <circ-port dir="out" pin="1230,820" x="240" y="270"/>
-      <circ-port dir="out" pin="1300,820" x="260" y="270"/>
+      <circ-port dir="out" pin="1320,720" x="260" y="270"/>
       <circ-port dir="out" pin="1350,890" x="270" y="320"/>
     </appear>
     <comp lib="0" loc="(1030,360)" name="Splitter">
@@ -4632,15 +4637,15 @@
       <a name="facing" val="east"/>
       <a name="label" val="CLK"/>
     </comp>
-    <comp lib="0" loc="(1300,820)" name="Pin">
+    <comp lib="0" loc="(1300,830)" name="Tunnel">
+      <a name="facing" val="north"/>
+      <a name="label" val="INT_CLEAR"/>
+    </comp>
+    <comp lib="0" loc="(1320,720)" name="Pin">
       <a name="appearance" val="classic"/>
       <a name="facing" val="south"/>
       <a name="label" val="TTYCLR"/>
       <a name="output" val="true"/>
-    </comp>
-    <comp lib="0" loc="(1300,830)" name="Tunnel">
-      <a name="facing" val="north"/>
-      <a name="label" val="INT_CLEAR"/>
     </comp>
     <comp lib="0" loc="(1320,970)" name="Tunnel">
       <a name="label" val="STOP"/>
@@ -4651,6 +4656,11 @@
       <a name="label" val="DOUT"/>
       <a name="output" val="true"/>
       <a name="width" val="16"/>
+    </comp>
+    <comp lib="0" loc="(1380,810)" name="Pin">
+      <a name="appearance" val="classic"/>
+      <a name="facing" val="north"/>
+      <a name="label" val="MCLR"/>
     </comp>
     <comp lib="0" loc="(180,290)" name="Pin">
       <a name="appearance" val="classic"/>
@@ -4900,6 +4910,9 @@
       <a name="inputs" val="7"/>
     </comp>
     <comp lib="1" loc="(1300,970)" name="AND Gate"/>
+    <comp lib="1" loc="(1320,740)" name="OR Gate">
+      <a name="facing" val="north"/>
+    </comp>
     <comp lib="1" loc="(310,320)" name="AND Gate"/>
     <comp lib="1" loc="(510,620)" name="AND Gate"/>
     <comp lib="1" loc="(560,460)" name="NOT Gate"/>
@@ -5001,8 +5014,12 @@
     <wire from="(1230,820)" to="(1230,830)"/>
     <wire from="(1230,990)" to="(1250,990)"/>
     <wire from="(1240,390)" to="(1240,490)"/>
-    <wire from="(1300,820)" to="(1300,830)"/>
+    <wire from="(1300,790)" to="(1300,830)"/>
     <wire from="(1300,970)" to="(1320,970)"/>
+    <wire from="(1320,720)" to="(1320,740)"/>
+    <wire from="(1340,790)" to="(1340,800)"/>
+    <wire from="(1340,800)" to="(1380,800)"/>
+    <wire from="(1380,800)" to="(1380,810)"/>
     <wire from="(180,290)" to="(200,290)"/>
     <wire from="(190,810)" to="(230,810)"/>
     <wire from="(220,230)" to="(240,230)"/>
@@ -5169,14 +5186,12 @@
     <appear>
       <rect fill="none" height="100" stroke="#000000" stroke-width="2" width="80" x="190" y="270"/>
       <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="255" y="288">D</text>
-      <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="239" y="288">A</text>
       <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="202" y="288">N</text>
       <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="224" y="288">R</text>
       <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="202" y="318">I</text>
       <text dominant-baseline="central" font-family="SansSerif" font-size="12" text-anchor="middle" x="255" y="318">O</text>
       <circ-anchor facing="east" x="270" y="320"/>
       <circ-port dir="in" pin="180,290" x="190" y="320"/>
-      <circ-port dir="in" pin="390,560" x="240" y="270"/>
       <circ-port dir="in" pin="530,560" x="260" y="270"/>
       <circ-port dir="out" pin="120,580" x="200" y="270"/>
       <circ-port dir="out" pin="220,580" x="220" y="270"/>
@@ -5271,11 +5286,6 @@
     </comp>
     <comp lib="0" loc="(370,290)" name="Tunnel">
       <a name="label" val="INT_ASYNC"/>
-    </comp>
-    <comp lib="0" loc="(390,560)" name="Pin">
-      <a name="appearance" val="classic"/>
-      <a name="facing" val="south"/>
-      <a name="label" val="KEYA"/>
     </comp>
     <comp lib="0" loc="(530,560)" name="Pin">
       <a name="appearance" val="classic"/>
